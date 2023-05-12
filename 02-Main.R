@@ -23,8 +23,8 @@ Fora_B <- read.csv("normalized_counts_space_SNG_B_Forage_space_2021-11-25 00_01_
 Nest_C <- read.csv("normalized_counts_space_SNG colony C_Nest_space_2021-12-10 00_01_00+01_00_2021-12-16 23_59_00+01_00.csv")
 Fora_C <- read.csv("normalized_counts_space_SNG colony C_Forage_space_2021-12-10 00_01_00+01_00_2021-12-16 23_59_00+01_00.csv")
 space_O <- read.csv("Space_O.csv")
-MiBi_O   <- read.csv("microbiota_O.csv", row.names=1)
-MiBi_ABC <- read.csv("Microbiota_ABC.csv", row.names = 1)
+MiBi_O   <- read.csv("ASVtable_O.csv", row.names=1)
+MiBi_ABC <- read.csv("ASVtable_ABC.csv", row.names = 1)
 
 # Exclusion of lowly detected individuals from colony 1
 node_O$count <- node_O$nursebox + node_O$foragebox
