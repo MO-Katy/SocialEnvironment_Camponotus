@@ -1,11 +1,13 @@
 # Combine all
+
+# Set directories and load libraries
+MAINDIR  <- "/Users/tkay/Desktop/Work/SNG/data"
+FIGDIR   <- "/Users/tkay/Desktop/Work/SNG/figures"
+FIGDATADIR   <- "/Users/tkay/Desktop/Work/SNG/figures_data"
 library('stringr');library('DESeq2');library('ggplot2');library('readr');
 library('grid');library('gridExtra');library('igraph'); library('lme4')
 
-# Set directories
-MAINDIR  <- "/Users/tkay/Desktop/SNG/data"
-FIGDIR   <- "/Users/tkay/Desktop/SNG/figures"
-
+# Import data
 setwd(MAINDIR)
 COLONIES <- c("A", "B", "C", "O")
 for (col in COLONIES){
@@ -83,15 +85,15 @@ DFO[3,6] = DFO[6,3] = round(summary(lm(node_O$spacePCA~ node_O$MicPCAm))$r.squar
 DFO[4,6] = DFO[6,4] = round(summary(lm(node_O$maturity~ node_O$MicPCAm))$r.squared,3)
 DFO[5,6] = DFO[6,5] = round(summary(lm(node_O$genePC2~ node_O$MicPCAm))$r.squared,3)
 
-
 DFALL <- round((DFO + DFA + DFC + DFB)/4, 2)
 DFALL[is.na(DFALL)] <- 0
 
-
 gr <- graph_from_adjacency_matrix(as.matrix(DFALL), weighted = TRUE, mode = c("undirected"))
 layout_gr <- layout_with_fr(gr)
-#E(gr)$color <- gray(1-(E(gr)$weight/max(E(gr)$weight, na.rm = 1)))
 E(gr)$color <- "darkgray"
+
+setwd(FIGDATADIR)
+write.csv(DFALL, "Fig3B.csv", row.names = TRUE)
 
 setwd(FIGDIR)
 pdf('Multinet.pdf', width=30, height=20)
@@ -105,7 +107,6 @@ plot(gr, layout = layout_gr,
      label.color = "black",
      edge.label.color = "black")
 dev.off()
-
 
 # Supplementary comparisons of correlations between PC1 and PC2 for different variables
 mean(c(summary(lm(node_A$Age~ node_A$genePC1))$r.squared,
@@ -170,7 +171,6 @@ mean(c(summary(lm(node_A$genePC2~ node_A$Extraction))$r.squared,
 t.test(DEGs$Social, DEGs$Task, paired = 1)
 
 # Mutlinet plots for each of the four colonies separately
-
 DFA[is.na(DFA)] <- 0
 DFB[is.na(DFB)] <- 0
 DFC[is.na(DFC)] <- 0
@@ -186,6 +186,12 @@ layout_gr_C <- layout_with_fr(gr_C)
 layout_gr_O <- layout_with_fr(gr_O)
 
 E(gr_A)$color = E(gr_B)$color = E(gr_C)$color = E(gr_O)$color = "darkgray"
+
+setwd(FIGDATADIR)
+write.csv(DFO, "FigS2_colony1.csv", row.names = TRUE)
+write.csv(DFA, "FigS2_colony2.csv", row.names = TRUE)
+write.csv(DFB, "FigS2_colony3.csv", row.names = TRUE)
+write.csv(DFC, "FigS2_colony4.csv", row.names = TRUE)
 
 setwd(FIGDIR)
 pdf('Multinet_A.pdf', width=30, height=20)
