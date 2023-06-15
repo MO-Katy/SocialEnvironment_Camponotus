@@ -1,10 +1,10 @@
 # SNG transcriptomic analysis
-library('stringr');library('DESeq2');library('ggplot2');library('readr');
-library('grid');library('gridExtra');library('igraph'); library('limma')
 
-# Set directories
+# Set directories and load libraries
 MAINDIR  <- "/Users/tkay/Desktop/Work/SNG/data"
 FIGDIR   <- "/Users/tkay/Desktop/Work/SNG/figures"
+library('stringr');library('DESeq2');library('ggplot2');library('readr');
+library('grid');library('gridExtra');library('igraph'); library('limma')
 
 # Import data
 setwd(MAINDIR)
@@ -14,7 +14,6 @@ pairwise_A <- read.csv("EdgeData_A.csv")
 pairwise_B <- read.csv("EdgeData_B.csv")
 pairwise_C <- read.csv("EdgeData_C.csv")
 pairwise_O <- read.csv("EdgeData_O.csv")
-
 COLONIES <- c("A", "B", "C", "O")
 for (col in COLONIES){
   assign(paste0("node_", col), read.csv(paste0("md_", col, "3.csv"), row.names=NULL))
@@ -47,7 +46,7 @@ for(id in 1:ncol(cts_O)){
 }
 colnames(cts_O) <- newnames_O
 
-# Remove IDs which are not present in the individual meta-data - i.e., labeling errors
+# Remove IDs which are not present in the individual meta-data - labelling errors
 cts_A <- cts_A[,colnames(cts_A) %in% node_A$Tag] # removes 3
 cts_B <- cts_B[,colnames(cts_B) %in% node_B$Tag] # removes 5
 cts_C <- cts_C[,colnames(cts_C) %in% node_C$Tag] # removes 1
@@ -83,10 +82,10 @@ row.names(node_B_t) <- node_B_t$antID
 row.names(node_C_t) <- node_C_t$antID
 row.names(node_O_t) <- node_O_t$antID
 
-# Remove one from A where there is no microbiota data
+# Remove one from A for which microbiota data is missing
 node_A_t <- na.omit(node_A_t)
 
-# Normalise age between 0 and 1 (for DESeq2)
+# Normalize age between 0 and 1 - for DESeq2
 node_A_t$Age <- (node_A_t$Age-min(node_A_t$Age))/(max(node_A_t$Age)-min(node_A_t$Age))
 node_B_t$Age <- (node_B_t$Age-min(node_B_t$Age))/(max(node_B_t$Age)-min(node_B_t$Age))
 node_C_t$Age <- (node_C_t$Age-min(node_C_t$Age))/(max(node_C_t$Age)-min(node_C_t$Age))
@@ -258,7 +257,7 @@ for (c in 1:ncol(cts_Ot)){
   cts_Ot[,c] <- cts_Ot[,c]  / sum(cts_Ot[,1])
 }
 
-# vst transformation
+# Transform data
 vsd_A <- vst(ddsAge_A, blind = FALSE)
 vsd_B <- vst(ddsAge_B, blind = FALSE)
 vsd_C <- vst(ddsAge_C, blind = FALSE)
@@ -871,7 +870,6 @@ dds_gpC <- DESeq(dds_gpC)
 summary(results(dds_pgC))
 summary(results(dds_gpC))
 
-
 dds_pgO <- DESeqDataSetFromMatrix(countData = cts_O_t,
                                   colData = node_O_t,
                                   design = ~ spacePCA + MicPCAm)
@@ -884,8 +882,6 @@ dds_pgO <- DESeq(dds_pgO)
 dds_gpO <- DESeq(dds_gpO)
 summary(results(dds_pgO))
 summary(results(dds_gpO))
-
-
 
 sum(na.omit(results(dds_gpO)$padj) < 0.1)
 
