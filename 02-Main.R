@@ -1,11 +1,13 @@
 # SNG Network and Behavioral analysis
+
+# Set directorites and load packages
 MAINDIR  <- "/Users/tkay/Desktop/Work/SNG/data"
 FIGDIR   <- "/Users/tkay/Desktop/Work/SNG/figures"
-
+FIGDATADIR   <- "/Users/tkay/Desktop/Work/SNG/figures_data"
 library(igraph); library(viridis);library(jpeg); library(assertthat);library(devtools);
 library(ggfortify); library(pals); library(lmerTest); library(r2glmm);library(stringr); 
-library(raster);
 
+# Import data
 setwd(MAINDIR)
 net_A  <- read.csv("Net_A2.csv")
 net_B  <- read.csv("Net_B2.csv")
@@ -26,7 +28,7 @@ space_O <- read.csv("Space_O.csv")
 MiBi_O   <- read.csv("ASVtable_O.csv", row.names=1)
 MiBi_ABC <- read.csv("ASVtable_ABC.csv", row.names = 1)
 
-# Exclusion of lowly detected individuals from colony 1
+# Exclusion of outliers from tracking data in all datasets
 node_O$count <- node_O$nursebox + node_O$foragebox
 to_exclude_O <- node_O$antID[which(node_O$count < mean(na.omit(node_O$count)) - sd(na.omit(node_O$count))*2)]
 net_O  <- net_O[!(net_O$ant1 %in% to_exclude_O | net_O$ant2 %in% to_exclude_O),]
@@ -34,15 +36,18 @@ node_O <- node_O[!(node_O$antID %in% to_exclude_O),]
 space_O <- space_O[!(space_O$Ant %in% to_exclude_O),]
 MiBi_O <- MiBi_O[!(rownames(MiBi_O) %in% to_exclude_O),]
 
-# Age distributions
+# Calclulate and plot ge distributions
 node_B$Age <- as.numeric(node_B$Age)
 node_C$Age <- as.numeric(node_C$Age)
-
-# Plot age distribution
 AGE <- c("0-5", "5-10",  "10-15", "15-20", "20-25", "25-30", "30-35", "35-40", "40-45", "45-50")
-FREQ <- hist(c(node_A$Age, node_B$Age, node_C$Age, na.omit(node_O$age)))$counts
+FREQ <- hist(c(node_A$Age, node_B$Age, node_C$Age, node_O$age))$counts
 AGEqplot <- data.frame(bin = AGE, count = FREQ)
 AGEqplot$bin <- factor(AGEqplot$bin, levels = c("0-5", "5-10",  "10-15", "15-20", "20-25", "25-30", "30-35", "35-40", "40-45", "45-50"))
+
+setwd(FIGDATADIR)
+AllAges = data.frame(age = c(node_O$age, node_A$Age, node_B$Age, node_C$Age),
+                     colony = c(rep(1, length(node_O$age)), rep(2, length(node_A$Age)), rep(3, length(node_B$Age)), rep(4, length(node_C$Age))))
+write.csv(AllAges, "Fig1C.csv", row.names = FALSE)
 
 setwd(FIGDIR)
 jpeg('Age_Distribution.jpg', width=4000, height=2000, unit='px')
@@ -72,7 +77,7 @@ axis(2, at = c(0,45), labels = TRUE, tick = TRUE, lwd = 8, cex.axis = 10)
 axis(1, at = c(0,55), labels = TRUE, tick = TRUE, lwd = 8, cex.axis = 10)
 dev.off()
 
-# Construct iGraph object
+# Construct iGraph objects
 net_A$ant1 <- as.character(net_A$ant1)
 net_A$ant2 <- as.character(net_A$ant2)
 net_A1 <- graph_from_edgelist(as.matrix(net_A[,1:2]), directed = FALSE)
@@ -107,8 +112,7 @@ net_C$ant2 <- as.character(net_C$ant2)
 net_C1 <- graph_from_edgelist(as.matrix(net_C[,1:2]), directed = FALSE)
 E(net_C1)$weight <- net_C[,3]
 
-# Remove biggest outlier for plotting
-E(net_C1)$weight[which(E(net_C1)$weight == max(E(net_C1)$weight))] <- round(mean(E(net_C1)$weight))
+E(net_C1)$weight[which(E(net_C1)$weight == max(E(net_C1)$weight))] <- round(mean(E(net_C1)$weight))  # Remove one extreme connection -- for visualization only
 E(net_C1)$weight <- round((E(net_C1)$weight/max(E(net_C1)$weight))*1000)  + 1
 
 net_layout_C1 <- layout_with_fr(net_C1)
@@ -140,9 +144,7 @@ net_color_O3 <- c(parula(80)[rank(1/as.numeric(net_color_O3))[-81]], "magenta")
 net_color_O3[is.na(node_O$age)] <-"gray"
 net_color_O3[length(net_color_O3)] <-"magenta"
 
-##########################
 # Visual network inspection
-##########################
 
 setwd(FIGDIR)
 jpeg('Network_A.jpg', width=4000, height=2000, unit='px')
@@ -160,7 +162,6 @@ plot(net_A1, layout = net_layout_A1,
      edge.width = ((E(net_A1)$weight/max(E(net_A1)$weight)))*40)
 text(0.15,1.25,"Age", cex = 20)
 dev.off()
-
 jpeg('Network_B.jpg', width=4000, height=2000, unit='px')
 par(mfrow = c(1,3), mar = c(0,0,0,0), oma = c(0,0,0,0), bty="n", mgp = c(0,0,0), mai = c(0,0,0,0), family = "serif")
 plot(net_B1, layout = net_layout_B1,
@@ -176,7 +177,6 @@ plot(net_B1, layout = net_layout_B1,
      edge.width = ((E(net_B1)$weight/max(E(net_B1)$weight)))*40)
 text(0.15,1.25,"Age", cex = 20)
 dev.off()
-
 jpeg('Network_C.jpg', width=4000, height=2000, unit='px')
 par(mfrow = c(1,3), mar = c(0,0,0,0), oma = c(0,0,0,0), bty="n", mgp = c(0,0,0), mai = c(0,0,0,0), family = "serif")
 plot(net_C1, layout = net_layout_C1,
@@ -192,7 +192,6 @@ plot(net_C1, layout = net_layout_C1,
      edge.width = ((E(net_C1)$weight/max(E(net_C1)$weight)))*40)
 text(0.15,1.25,"Age", cex = 20)
 dev.off()
-
 jpeg('Network_O.jpg', width=4000, height=2000, unit='px')
 par(mfrow = c(1,3), mar = c(0,0,0,0), oma = c(0,0,0,0), bty="n", mgp = c(0,0,0), mai = c(0,0,0,0), family = "serif")
 plot(net_O1, layout = net_layout_O1,
@@ -209,15 +208,18 @@ plot(net_O1, layout = net_layout_O1,
 text(0.15,1.25,"Age", cex = 20)
 dev.off()
 
-##########################
 # Social Maturity distributions
-##########################
-# remove queens
-node_A <- node_A[-nrow(node_A),]
+node_A <- node_A[-nrow(node_A),] # remove queens
 node_B <- node_B[-nrow(node_B),]
 node_C <- node_C[-nrow(node_C),]
 node_O <- node_O[-nrow(node_O),]
 
+setwd(FIGDATADIR)
+FigS4 <- data.frame(maturity = c(node_O$soft, node_A$maturity, node_B$maturity, node_C$maturity),
+                    colony = c(rep(1,length(node_O$soft)), rep(2,length(node_A$maturity)), rep(3,length(node_B$maturity)), rep(4,length(node_C$maturity))))
+write.csv(FigS4, "FigS4.csv", row.names = FALSE)
+
+setwd(FIGDIR)
 jpeg('Maturity_Distribution.jpg', width=5000, height=2000, unit='px')
 par(mfrow = c(1,4), mar = c(15,15,10,10), oma = c(0,0,0,0), bty="n", mgp = c(8,8,0), family = "serif")
 hist(node_A$maturity,
@@ -242,9 +244,7 @@ axis(2, at = c(0,140), labels = TRUE, tick = TRUE, lwd = 8, cex.axis = 10)
 axis(1, at = c(0,1), labels = TRUE, tick = TRUE, lwd = 8, cex.axis = 10)
 dev.off()
 
-##########################
-# Social Maturity v Foraging v Age
-##########################
+# The relationships between social Maturity, foraging frequency, and age
 
 Forage_ALL <- data.frame(Age = c(node_A$Age, node_B$Age, node_C$Age, node_O$age),
                          Forage = c(node_A$prop, node_B$prop, node_C$prop, node_O$boxratio),
@@ -257,12 +257,15 @@ summary(lmerTest::lmer(Age ~ Maturity + (1|colony), Forage_ALL))
 r2beta(lmerTest::lmer(Forage ~ Maturity + (1|colony), Forage_ALL))
 summary(lmerTest::lmer(Forage ~ Maturity + (1|colony), Forage_ALL))
 
-
 Forage_ALL$Nurse <- (Forage_ALL$Nurse - min(Forage_ALL$Nurse, na.rm = 1)) / (max(Forage_ALL$Nurse, na.rm = 1) - min(Forage_ALL$Nurse, na.rm = 1))
+
+setwd(FIGDATADIR)
+write.csv(Forage_ALL, "Fig2B.csv", row.names = FALSE)
+
+setwd(FIGDIR)
 jpeg('ForMatAge.jpg', width=5000, height=2000, unit='px')
 par(mfrow = c(1,3), mar = c(15,15,10,10), oma = c(0,0,0,0), bty="n", mgp = c(8,8,0), family = "serif")
 plot(Forage_ALL$Forage~Forage_ALL$Age,
-     #col = c(rep("orange", nrow(node_A)), rep("purple", nrow(node_B)), rep("lightblue", nrow(node_C)), rep("green3", nrow(node_O))),
      col = "darkblue",
      pch = 16,
      xlab = "Age (weeks)", ylab = "Prop. of time spent foraging",
@@ -270,7 +273,6 @@ plot(Forage_ALL$Forage~Forage_ALL$Age,
 axis(2, at = c(0,1), labels = TRUE, tick = TRUE, lwd = 8, cex.axis = 10)
 axis(1, at = c(0,45), labels = TRUE, tick = TRUE, lwd = 8, cex.axis = 10)
 plot(Forage_ALL$Age~Forage_ALL$Maturity,
-     #col = c(rep("orange", nrow(node_A)), rep("purple", nrow(node_B)), rep("lightblue", nrow(node_C)), rep("green3", nrow(node_O))),
      col = "darkblue",
      pch = 16,
      xlab = "Social Maturity", ylab = "Age (weeks)",
@@ -278,7 +280,6 @@ plot(Forage_ALL$Age~Forage_ALL$Maturity,
 axis(1, at = c(0,1), labels = TRUE, tick = TRUE, lwd = 8, cex.axis = 10)
 axis(2, at = c(0,45), labels = TRUE, tick = TRUE, lwd = 8, cex.axis = 10)
 plot(Forage_ALL$Forage~Forage_ALL$Maturity,
-     #col = c(rep("orange", nrow(node_A)), rep("purple", nrow(node_B)), rep("lightblue", nrow(node_C)), rep("green3", nrow(node_O))),
      col = "darkblue",
      pch = 16,
      xlab = "Social Maturity", ylab = "Prop. of time spent foraging",
@@ -286,7 +287,6 @@ plot(Forage_ALL$Forage~Forage_ALL$Maturity,
 axis(2, at = c(0,1), labels = TRUE, tick = TRUE, lwd = 8, cex.axis = 10)
 axis(1, at = c(0,1), labels = TRUE, tick = TRUE, lwd = 8, cex.axis = 10)
 dev.off()
-
 jpeg('ForNur.jpg', width=5000, height=2000, unit='px')
 par(mfrow = c(1,2), mar = c(15,15,10,10), oma = c(0,0,0,0), bty="n", mgp = c(8,8,0), family = "serif")
 plot(Forage_ALL$Forage~Forage_ALL$Age,
@@ -307,7 +307,7 @@ axis(2, at = c(0,1), labels = TRUE, tick = TRUE, lwd = 8, cex.axis = 10)
 axis(1, at = c(0,45), labels = TRUE, tick = TRUE, lwd = 8, cex.axis = 10)
 dev.off()
 
-### Analysis of annotated behaviors
+# Analysis of manually annotated behaviors
 tasks <- c("cleaning", "trophallaxis", "broodcare",
            "guarding", "queenattending",
            "prop")
@@ -316,12 +316,9 @@ task_B <- node_B[,colnames(node_B) %in% tasks]
 task_C <- node_C[,colnames(node_C) %in% tasks]
 task_O <- node_O[,colnames(node_O) %in% c("cleaning", "tropholaxis", "nursing", "Prop_time_guarding_2BL_FPT1000sec",
                                           "N_Q_contacts", "boxratio")]
+task_O[rownames(task_O)=="74",1:4] <- as.numeric(colMeans(na.omit(task_O))[1:4]) # In one colony one individual is missing task performance data. Replace with population average
 
-# In one colony one individual is missing task performance data. Replace with population average.
-task_O[rownames(task_O)=="74",1:4] <- as.numeric(colMeans(na.omit(task_O))[1:4])
-
-# Uniformize old colony with new colony
-task_O <- task_O[,c(3,2,1,6,5,4)]
+task_O <- task_O[,c(3,2,1,6,5,4)] # Uniformise old colony with new colony
 colnames(task_O) <- tasks
 
 for (col in 1:ncol(task_A)){
@@ -349,6 +346,14 @@ task_PCA_O <- prcomp(task_O)
 
 task_ALL <- rbind(task_A, task_B, task_C, task_O)
 
+setwd(FIGDATADIR)
+write.csv(task_O, "FigS5_colony1.csv", row.names = FALSE)
+write.csv(task_A, "FigS5_colony2.csv", row.names = FALSE)
+write.csv(task_B, "FigS5_colony3.csv", row.names = FALSE)
+write.csv(task_C, "FigS5_colony4.csv", row.names = FALSE)
+write.csv(task_ALL, "FigS5_all.csv", row.names = FALSE)
+
+setwd(FIGDIR)
 jpeg('Task_PCA_A.jpg', width=2000, height=2000, unit='px')
 par(mfrow = c(1,1), mar = c(15,15,10,10), oma = c(0,0,0,0), bty="n", mgp = c(8,8,0), family = "serif")
 autoplot(task_PCA_A,
@@ -439,7 +444,7 @@ summary(lm(node_B$maturity ~ node_B$Age))
 summary(lm(node_C$maturity ~ node_C$Age))
 summary(lm(node_O$soft ~ node_O$age))
 
-# Network by behavioral caste
+# The distribution of behavioral sub-castes across the social networks 
 task_A$classification <- NA
 for (ant in 1:nrow(task_A)){
   if(length(colnames(task_A)[which(task_A[ant,1:6] == max(task_A[ant,1:6]))]) == 1){
@@ -519,45 +524,13 @@ dev.off()
 space_A <- cbind(Nest_A, Fora_A[,-1])
 space_B <- cbind(Nest_B, Fora_B[,-1])
 space_C <- cbind(Nest_C, Fora_C[,-1])
-
-# Spatial similarity
 space_A <- space_A[space_A$X %in% node_A$antID,]
 space_B <- space_B[space_B$X %in% node_B$antID,]
 space_C <- space_C[space_C$X %in% node_C$antID,]
-
 space_PCA_A <- prcomp(space_A[,-1])
 space_PCA_B <- prcomp(space_B[,-1])
 space_PCA_C <- prcomp(space_C[,-1])
 space_PCA_O <- prcomp(space_O[,-1])
-
-jpeg('Space_PCA_A.jpg', width=2000, height=2000, unit='px')
-par(mfrow = c(1,1), mar = c(15,15,10,10), oma = c(0,0,0,0), bty="n", mgp = c(8,8,0), family = "serif")
-autoplot(space_PCA_A) + 
-  geom_point(size = 10) + 
-  theme(text = element_text(size=80),
-        axis.text = element_text(size=0))
-dev.off()
-jpeg('Space_PCA_B.jpg', width=2000, height=2000, unit='px')
-par(mfrow = c(1,1), mar = c(15,15,10,10), oma = c(0,0,0,0), bty="n", mgp = c(8,8,0), family = "serif")
-autoplot(space_PCA_B) + 
-  geom_point(size = 10) + 
-  theme(text = element_text(size=80),
-        axis.text = element_text(size=0))
-dev.off()
-jpeg('Space_PCA_C.jpg', width=2000, height=2000, unit='px')
-par(mfrow = c(1,1), mar = c(15,15,10,10), oma = c(0,0,0,0), bty="n", mgp = c(8,8,0), family = "serif")
-autoplot(space_PCA_C) + 
-  geom_point(size = 10) + 
-  theme(text = element_text(size=80),
-        axis.text = element_text(size=0))
-dev.off()
-jpeg('Space_PCA_O.jpg', width=2000, height=2000, unit='px')
-par(mfrow = c(1,1), mar = c(15,15,10,10), oma = c(0,0,0,0), bty="n", mgp = c(8,8,0), family = "serif")
-autoplot(space_PCA_O) + 
-  geom_point(size = 10) + 
-  theme(text = element_text(size=80),
-        axis.text = element_text(size=0))
-dev.off()
 
 summary(lm(space_PCA_A$x[,1] ~ node_A$maturity))
 summary(lm(space_PCA_B$x[,1] ~ node_B$maturity))
@@ -614,10 +587,6 @@ task_A$maturity <- node_A$maturity
 task_B$maturity <- node_B$maturity
 task_C$maturity <- node_C$maturity
 task_O$maturity <- node_O$soft
-  
-  
-# Microbiota
-####################
 
 # Separate microbiota data by colony
 Mic_A <- MiBi_ABC[str_extract(rownames(MiBi_ABC), "[A-Z]+" ) == "A",]
