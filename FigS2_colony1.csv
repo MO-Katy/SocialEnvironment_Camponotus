@@ -1,0 +1,7 @@
+"","Age","Behaviour","Physical environment","Social","Gene expression","Microbiota"
+"Age",0,0.322,0.217,0.359,0.277,0.102
+"Behaviour",0.322,0,0.663,0.761,0.467,0.118
+"Physical environment",0.217,0.663,0,0.359,0.477,0.084
+"Social",0.359,0.761,0.359,0,0.598,0.148
+"Gene expression",0.277,0.467,0.477,0.598,0,0.073
+"Microbiota",0.102,0.118,0.084,0.148,0.073,0
